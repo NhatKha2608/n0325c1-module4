@@ -1,69 +1,66 @@
 package com.example.exercise.controller;
 
-import com.example.exercise.dto.JsonResponse;
+import com.example.exercise.dto.employee.DepartmentSearchRequest;
 import com.example.exercise.exception.AppException;
 import com.example.exercise.exception.ErrorCode;
+import com.example.exercise.model.Department;
+import com.example.exercise.service.IDepartmentService;
+import com.example.exercise.util.JsonResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/departments")
+@RequiredArgsConstructor
 public class DepartmentController {
-    private final List<Department> departments = new ArrayList<>(
-            Arrays.asList(
-                    new Department(1, "Quản lý"),
-                    new Department(2, "Kế toán"),
-                    new Department(3, "Sale-Marketing"),
-                    new Department(4, "Sản xuất")
-            )
-    );
+
+    private final IDepartmentService departmentService;
 
     @GetMapping
-    public ResponseEntity<?> getAll() {
-        return JsonResponse.ok(departments);
+    public ResponseEntity<?> getAll(@RequestParam(required = false) String name) {
+        DepartmentSearchRequest request = new DepartmentSearchRequest();
+        request.setName(name);
+        List<Department> result = departmentService.findByAttributes(request);
+        return JsonResponse.ok(result);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable("id") int id) {
-        return departments.stream()
-                .filter(d -> d.getId() == id)
-                .findFirst()
+    public ResponseEntity<?> getById(@PathVariable UUID id) {
+        return departmentService.findById(id)
                 .map(JsonResponse::ok)
                 .orElseThrow(() -> new AppException(ErrorCode.DEPARTMENT_NOT_EXISTED));
     }
 
-
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Department department) {
-        department.setId((int) (Math.random() * 1000000000));
-        departments.add(department);
-        return JsonResponse.created(department);
-    }
-    @PutMapping("/w/{id}")
-    public ResponseEntity<?> update(@PathVariable("id") int id, @RequestBody Department department) {
-        return departments.stream()
-                .filter(d -> d.getId() == id)
-                .findFirst()
-                .map(d -> {
-                    d.setName(department.getName());
-                    return JsonResponse.ok(d);
-                })
-                .orElseThrow(() -> new AppException(ErrorCode.DEPARTMENT_NOT_EXISTED));
+        // Tự tạo ID giả nếu cần, hoặc generate UUID nếu hệ thống dùng UUID
+        if (department.getId() == null) {
+            department.setId((int) (Math.random() * 1000000)); // giả định dùng Integer
+        }
+        Department saved = departmentService.save(department);
+        return JsonResponse.created(saved);
     }
 
-    @DeleteMapping("/w/{id}")
-    public ResponseEntity<?> delete(@PathVariable("id") int id) {
-        return departments.stream()
-                .filter(d -> d.getId() == id)
-                .findFirst()
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody Department department) {
+        Department updated = departmentService.findById(id)
                 .map(d -> {
-                    departments.remove(d);
-                    return JsonResponse.noContent();
+                    d.setName(department.getName());
+                    return departmentService.save(d);
                 })
                 .orElseThrow(() -> new AppException(ErrorCode.DEPARTMENT_NOT_EXISTED));
+        return JsonResponse.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable UUID id) {
+        departmentService.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.DEPARTMENT_NOT_EXISTED));
+        departmentService.delete(id);
+        return JsonResponse.noContent();
     }
 }

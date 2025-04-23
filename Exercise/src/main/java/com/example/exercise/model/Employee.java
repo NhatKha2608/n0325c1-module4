@@ -1,10 +1,10 @@
-package com.example.exercise.controller;
+package com.example.exercise.model;
 
+import com.example.exercise.enums.Gender;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
-import java.util.Locale;
 import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,13 +19,5 @@ public class Employee {
     Double salary;
     String phone;
     Integer departmentId;
-
-
-
 }
 
-enum Gender {
-    MALE,
-    FEMALE,
-    OTHER;
-}

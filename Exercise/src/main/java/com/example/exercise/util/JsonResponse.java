@@ -1,7 +1,7 @@
-package com.example.exercise.dto;
+package com.example.exercise.util;
 
+import com.example.exercise.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 
 public class JsonResponse {

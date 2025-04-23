@@ -1,8 +1,11 @@
-package com.example.exercise.controller;
+package com.example.exercise.model;
 
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.util.UUID;
+
 
 @Getter
 @Setter
