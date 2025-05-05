@@ -7,17 +7,15 @@ import com.example.exercise.service.IEmployeeService;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class EmployeeService  implements IEmployeeService {
-    @Autowired
+public class EmployeeService implements IEmployeeService {
     IEmployeeResository employeeRepository;
 
     @Override
@@ -26,7 +24,7 @@ public class EmployeeService  implements IEmployeeService {
     }
 
     @Override
-    public Optional<Employee> findById(UUID id) {
+    public Optional<Employee> findById(Integer id) {
         return employeeRepository.findById(id);
     }
 
@@ -36,7 +34,7 @@ public class EmployeeService  implements IEmployeeService {
     }
 
     @Override
-    public void delete(UUID id) {
+    public void delete(Integer id) {
         employeeRepository.delete(id);
     }
 }

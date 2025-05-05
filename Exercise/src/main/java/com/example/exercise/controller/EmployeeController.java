@@ -11,8 +11,6 @@ import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.*;
-
 
 @RestController
 @AllArgsConstructor
@@ -27,7 +25,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable("id") UUID id) {
+    public ResponseEntity<?> getById(@PathVariable("id") Integer id) {
         return employeeService.findById(id)
                 .map(JsonResponse::ok)
                 .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_EXIST));
@@ -39,18 +37,18 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable("id") UUID id, @RequestBody Employee employee) {
-        employeeService.findById(id).orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_EXIST));
+    public ResponseEntity<?> update(@PathVariable("id") Integer id, @RequestBody Employee employee) {
+        employeeService.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_EXIST));
         employee.setId(id);
         return JsonResponse.ok(employeeService.save(employee));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
-        employeeService.findById(id).orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_EXIST));
+    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
+        employeeService.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_EXIST));
         employeeService.delete(id);
         return JsonResponse.noContent();
     }
-
-
 }
