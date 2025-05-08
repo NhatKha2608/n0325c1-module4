@@ -4,8 +4,10 @@ import com.example.exercise.enums.Gender;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import javax.persistence.*;
 import java.time.LocalDate;
-import java.util.UUID;
+
+@Entity
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -13,9 +15,12 @@ import java.util.UUID;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
     String name;
     LocalDate dob;
+    @Enumerated(EnumType.STRING)
     Gender gender;
     Double salary;
     String phone;

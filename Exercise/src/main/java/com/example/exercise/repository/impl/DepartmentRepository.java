@@ -2,7 +2,11 @@ package com.example.exercise.repository.impl;
 
 import com.example.exercise.dto.employee.DepartmentSearchRequest;
 import com.example.exercise.model.Department;
+import com.example.exercise.model.Employee;
 import com.example.exercise.repository.IDepartmentRepository;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
@@ -14,105 +18,56 @@ public class DepartmentRepository implements IDepartmentRepository {
 
     @Override
     public List<Department> findByAttributes(DepartmentSearchRequest request) {
-        List<Department> departmentList = new ArrayList<>();
-        String query = "SELECT id, name FROM department ";
-
-        if (request.getName() != null && !request.getName().isEmpty()) {
-            query += " AND LOWER(name) LIKE ?";
+        Session session = ConnectionUtil.sessionFactory.openSession(); // Bước 1: Mở phiên làm việc (Session) từ ConnectionUtil
+        List<Department> department = null;
+        try {
+            department = session.createQuery("FROM Department").getResultList(); // Bước 2: Sử dụng HQL để lấy danh sách sinh viên
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            session.close(); // Bước 3: Đóng phiên làm việc sau khi lấy danh sách xong
         }
-
-        try (Connection connection = BaseRepository.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-
-            if (request.getName()!= null && !request.getName().isEmpty()) {
-                preparedStatement.setString(1, "%" + request.getName().toLowerCase() + "%");
-            }
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                Department department = new Department(
-                        resultSet.getInt("id"),
-                        resultSet.getString("name")
-                );
-                departmentList.add(department);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while fetching departments", e);
-        }
-
-        return departmentList;
+        return department;
     }
 
     @Override
     public Optional<Department> findById(UUID id) {
-        String query = "SELECT * FROM department WHERE id = ?";
-        try (PreparedStatement preparedStatement = BaseRepository.getConnection().prepareStatement(query)) {
-            preparedStatement.setString(1, String.valueOf(id));
-            ResultSet resultSet = preparedStatement.executeQuery();
+        Session session = ConnectionUtil.sessionFactory.openSession();
+        String sql = "SELECT * FROM Department WHERE id = :id";
+        Query<Department> query = session.createNativeQuery(sql, Department.class);
 
-            if (resultSet.next()) {
-                Department department = new Department(
-                        resultSet.getInt("id"),
-                        resultSet.getString("name")
-                );
-                return Optional.of(department);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while fetching department by ID", e);
-        }
+        query.setParameter("id", id); // Chuyển đổi UUID thành String
 
-        return Optional.empty();
+        return query.uniqueResultOptional();
     }
 
     @Override
     public Department save(Department department) {
-        String updateQuery = "UPDATE department SET name = ? WHERE id = ?";
-        String insertQuery = "INSERT INTO department (name) VALUES (?)";
+        try (Session session = ConnectionUtil.sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
 
-        try (Connection connection = BaseRepository.getConnection()) {
-            Optional<Department> existingDepartment = findById(UUID.fromString(department.getName()));
+            try {
 
-            if (existingDepartment.isPresent()) {
-                // Cập nhật
-                try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
-                    preparedStatement.setString(1, department.getName());
-                    preparedStatement.setInt(2, department.getId());
-                    preparedStatement.executeUpdate();
+                session.saveOrUpdate(department);
+
+                transaction.commit();
+            } catch (Exception e) {
+                if (transaction != null) {
+                    transaction.rollback(); // Rollback nếu có lỗi
                 }
-            } else {
-                // Thêm mới
-                try (PreparedStatement preparedStatement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS)) {
-                    preparedStatement.setString(1, department.getName());
-                    preparedStatement.executeUpdate();
-                    // Lấy ID được auto-generate
-                    try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            department.setId(generatedKeys.getInt(1));
-                        }
-                    }
-                }
+                throw new RuntimeException(e);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while saving department", e);
         }
-
         return department;
     }
 
     @Override
     public void delete(UUID id) {
-        String query = "DELETE FROM department WHERE id = ?";
-
-        try (Connection connection = BaseRepository.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-
-            preparedStatement.setString(1, id.toString());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while deleting department from database", e);
-        }
+        Session session = ConnectionUtil.sessionFactory.openSession();
+        Transaction transaction = session.beginTransaction();
+        session.createQuery("DELETE FROM Department d WHERE d.id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+        transaction.commit();
     }
-
-
-
 }

@@ -4,11 +4,13 @@ import com.example.exercise.dto.employee.EmployeeSearchRequest;
 import com.example.exercise.enums.Gender;
 import com.example.exercise.model.Employee;
 import com.example.exercise.repository.IEmployeeResository;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 import org.springframework.stereotype.Repository;
 
 import java.sql.*;
 import java.sql.Date;
-import java.time.LocalDate;
 import java.util.*;
 
 @Repository
@@ -16,133 +18,57 @@ public class EmployeeRepository implements IEmployeeResository {
 
     @Override
     public List<Employee> findByAttributes(EmployeeSearchRequest request) {
-        List<Employee> employeeList = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(
-                "SELECT id, name, dob, gender, salary, phone, departmentId FROM employee WHERE 1=1"
-        );
-        List<Object> params = new ArrayList<>();
 
-        if (request.getName() != null && !request.getName().isBlank()) {
-            sql.append(" AND LOWER(name) LIKE ?");
-            params.add("%" + request.getName().toLowerCase() + "%");
+        Session session = ConnectionUtil.sessionFactory.openSession(); // Bước 1: Mở phiên làm việc (Session) từ ConnectionUtil
+        List<Employee> employee = null;
+        try {
+            employee = session.createQuery("FROM Employee").getResultList(); // Bước 2: Sử dụng HQL để lấy danh sách sinh viên
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            session.close(); // Bước 3: Đóng phiên làm việc sau khi lấy danh sách xong
         }
-        if (request.getDepartmentId() != null) {
-            sql.append(" AND departmentId = ?");
-            params.add(request.getDepartmentId());
-        }
-        if (request.getSalaryRange() != null) {
-            switch (request.getSalaryRange()) {
-                case "lt5":  sql.append(" AND salary < 5000000"); break;
-                case "5-10": sql.append(" AND salary >= 5000000 AND salary < 10000000"); break;
-                case "10-20": sql.append(" AND salary >= 10000000 AND salary <= 20000000"); break;
-                case "gt20": sql.append(" AND salary > 20000000"); break;
-            }
-        }
-
-        try (Connection conn = BaseRepository.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("id");
-                    String name = rs.getString("name");
-                    LocalDate dob = rs.getDate("dob").toLocalDate();
-                    Gender gender = Gender.valueOf(rs.getString("gender").toUpperCase());
-                    Double salary = rs.getDouble("salary");
-                    String phone = rs.getString("phone");
-                    Integer departmentId = rs.getInt("departmentId");
-
-                    employeeList.add(new Employee(id, name, dob, gender, salary, phone, departmentId));
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while fetching employees", e);
-        }
-        return employeeList;
+        return employee;
     }
 
     @Override
     public Optional<Employee> findById(Integer id) {
-        String query = "SELECT id, name, dob, gender, salary, phone, departmentId FROM employee WHERE id = ?";
+        Session session = ConnectionUtil.sessionFactory.openSession();
+        String sql = "SELECT * FROM Employee WHERE id = :id";
+        Query<Employee> query = session.createNativeQuery(sql, Employee.class);
 
-        try (Connection conn = BaseRepository.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+        query.setParameter("id", id); // Chuyển đổi UUID thành String
 
-            ps.setInt(1, id);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    Employee emp = new Employee(
-                            rs.getInt("id"),
-                            rs.getString("name"),
-                            rs.getDate("dob").toLocalDate(),
-                            Gender.valueOf(rs.getString("gender").toUpperCase()),
-                            rs.getDouble("salary"),
-                            rs.getString("phone"),
-                            rs.getInt("departmentId")
-                    );
-                    return Optional.of(emp);
-                }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while fetching employee by ID", e);
-        }
-        return Optional.empty();
+        return query.uniqueResultOptional();
     }
 
     @Override
     public Employee save(Employee employee) {
-        String updateSql = "UPDATE employee SET name = ?, dob = ?, gender = ?, salary = ?, phone = ?, departmentId = ? WHERE id = ?";
-        String insertSql = "INSERT INTO employee (name, dob, gender, salary, phone, departmentId) VALUES (?, ?, ?, ?, ?, ?)";
+        try (Session session = ConnectionUtil.sessionFactory.openSession()) {
+            Transaction transaction = session.beginTransaction();
 
-        try (Connection conn = BaseRepository.getConnection()) {
-            if (employee.getId() != null && findById(employee.getId()).isPresent()) {
-                try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
-                    ps.setString(1, employee.getName());
-                    ps.setDate(2, Date.valueOf(employee.getDob()));
-                    ps.setString(3, employee.getGender().name());
-                    ps.setDouble(4, employee.getSalary());
-                    ps.setString(5, employee.getPhone());
-                    ps.setInt(6, employee.getDepartmentId());
-                    ps.setInt(7, employee.getId());
-                    ps.executeUpdate();
-                }
-            } else {
-                try (PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setString(1, employee.getName());
-                    ps.setDate(2, Date.valueOf(employee.getDob()));
-                    ps.setString(3, employee.getGender().name());
-                    ps.setDouble(4, employee.getSalary());
-                    ps.setString(5, employee.getPhone());
-                    ps.setInt(6, employee.getDepartmentId());
+            try {
 
-                    ps.executeUpdate();
-                    try (ResultSet keys = ps.getGeneratedKeys()) {
-                        if (keys.next()) {
-                            employee.setId(keys.getInt(1));
-                        }
-                    }
+                session.saveOrUpdate(employee);
+
+                transaction.commit();
+            } catch (Exception e) {
+                if (transaction != null) {
+                    transaction.rollback(); // Rollback nếu có lỗi
                 }
+                throw new RuntimeException(e);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while saving employee", e);
         }
         return employee;
     }
 
     @Override
     public void delete(Integer id) {
-        String sql = "DELETE FROM employee WHERE id = ?";
-        try (Connection conn = BaseRepository.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Error while deleting employee", e);
-        }
+        Session session = ConnectionUtil.sessionFactory.openSession();
+        Transaction transaction = session.beginTransaction();
+        session.createQuery("DELETE FROM Employee e WHERE e.id = :id")
+                .setParameter("id", id)
+                .executeUpdate();
+        transaction.commit();
     }
 }
