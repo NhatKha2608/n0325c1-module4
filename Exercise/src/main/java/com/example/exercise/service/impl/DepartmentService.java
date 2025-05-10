@@ -1,26 +1,20 @@
 package com.example.exercise.service.impl;
 
-import com.example.exercise.dto.employee.DepartmentSearchRequest;
-import com.example.exercise.model.Department;
-import com.example.exercise.repository.IDepartmentRepository;
 import com.example.exercise.service.IDepartmentService;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import com.example.exercise.repository.IDepartmentRepository;
+import com.example.exercise.model.Department;
+import com.example.exercise.dto.employee.DepartmentSearchRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class DepartmentService implements IDepartmentService {
 
     @Autowired
-    IDepartmentRepository departmentRepository;
+    private IDepartmentRepository departmentRepository;
 
     @Override
     public List<Department> findByAttributes(DepartmentSearchRequest departmentSearchRequest) {
@@ -28,7 +22,7 @@ public class DepartmentService implements IDepartmentService {
     }
 
     @Override
-    public Optional<Department> findById(UUID id) {
+    public Optional<Department> findById(Integer id) {
         return departmentRepository.findById(id);
     }
 
@@ -38,7 +32,7 @@ public class DepartmentService implements IDepartmentService {
     }
 
     @Override
-    public void delete(UUID id) {
-        departmentRepository.delete(id);
+    public void delete(Integer id) {
+        departmentRepository.deleteById(id); // Sửa lại gọi phương thức đúng
     }
 }

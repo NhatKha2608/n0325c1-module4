@@ -29,7 +29,7 @@ public class DepartmentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable UUID id) {
+    public ResponseEntity<?> getById(@PathVariable Integer id) {
         return departmentService.findById(id)
                 .map(JsonResponse::ok)
                 .orElseThrow(() -> new AppException(ErrorCode.DEPARTMENT_NOT_EXISTED));
@@ -46,7 +46,7 @@ public class DepartmentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody Department department) {
+    public ResponseEntity<?> update(@PathVariable Integer id, @RequestBody Department department) {
         Department updated = departmentService.findById(id)
                 .map(d -> {
                     d.setName(department.getName());
@@ -57,7 +57,7 @@ public class DepartmentController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(@PathVariable Integer id) {
         departmentService.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DEPARTMENT_NOT_EXISTED));
         departmentService.delete(id);

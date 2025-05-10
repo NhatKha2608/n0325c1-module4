@@ -1,10 +1,10 @@
 package com.example.exercise.model;
 
 import com.example.exercise.enums.Gender;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import javax.persistence.*;
 import java.time.LocalDate;
 
 @Entity
@@ -24,6 +24,6 @@ public class Employee {
     Gender gender;
     Double salary;
     String phone;
-    Integer departmentId;
+    Integer department_Id;
 }
 

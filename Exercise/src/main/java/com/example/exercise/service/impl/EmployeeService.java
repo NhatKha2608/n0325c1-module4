@@ -8,7 +8,6 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -20,8 +19,17 @@ public class EmployeeService implements IEmployeeService {
 
     @Override
     public List<Employee> findByAttributes(EmployeeSearchRequest employeeSearchRequest) {
-        return employeeRepository.findByAttributes(employeeSearchRequest);
+        return employeeRepository.findByAttributes(
+                employeeSearchRequest.getName(),
+                employeeSearchRequest.getDobFrom(),
+                employeeSearchRequest.getDobTo(),
+                employeeSearchRequest.getGender() != null ? employeeSearchRequest.getGender().toString() : null,  // vì native query dùng String
+                employeeSearchRequest.getSalaryRange(),
+                employeeSearchRequest.getPhone(),
+                employeeSearchRequest.getDepartmentId()
+        );
     }
+
 
     @Override
     public Optional<Employee> findById(Integer id) {
@@ -35,6 +43,6 @@ public class EmployeeService implements IEmployeeService {
 
     @Override
     public void delete(Integer id) {
-        employeeRepository.delete(id);
+        employeeRepository.deleteById(id);
     }
 }
