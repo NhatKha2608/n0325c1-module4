@@ -1,10 +1,12 @@
-package com.techzen.academy_n0325c1.model;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+package com.example.exercise.model;
+
+import com.example.exercise.enums.Gender;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 
 @Entity
 @NoArgsConstructor
@@ -13,21 +15,20 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Student {
+public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    Integer id;
     String name;
-    double score ;
+    LocalDate dob;
+    @Enumerated(EnumType.STRING)
+    Gender gender;
+    Double salary;
+    String phone;
 
-    @OneToOne
-    StudentProfile studentProfile;
 
-    @JsonIgnoreProperties("student")
+    @JsonIgnoreProperties("employee")
     @ManyToOne
-    Clazz clazz;
+    Department department;
+
 }
-
-
-
-
